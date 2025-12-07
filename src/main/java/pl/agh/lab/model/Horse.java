@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.util.*;
 import java.util.Comparator;
 import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "horses")
@@ -48,6 +49,7 @@ public class Horse implements Comparable<Horse>, Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stable_id")
+    @JsonIgnore
     private Stable stable;
 
 
