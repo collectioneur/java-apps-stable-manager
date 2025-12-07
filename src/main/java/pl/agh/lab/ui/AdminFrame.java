@@ -209,7 +209,7 @@ public class AdminFrame extends JFrame {
         if (confirm != JOptionPane.YES_OPTION) return;
 
         try {
-            service.removeStable(stable);
+            service.removeStable(stable.getId());
             reloadStables(false);
             horseTableModel.setHorses(List.of());
         } catch (StableOperationException ex) {
@@ -371,15 +371,11 @@ public class AdminFrame extends JFrame {
                 ? (HorseCondition) selectedState
                 : null;
 
-        try {
-            List<Horse> horses = service.filterHorses(stable, text, condition);
-            var ratingStats = service.getHorseRatingStatsForStable(stable);
+        List<Horse> horses = service.filterHorses(stable, text, condition);
+        var ratingStats = service.getHorseRatingStatsForStable(stable);
 
-            horseTableModel.setHorsesWithStats(horses, ratingStats);
+        horseTableModel.setHorsesWithStats(horses, ratingStats);
 
-        } catch (StableOperationException ex) {
-            showError(ex.getMessage());
-        }
     }
 
     private Stable getSelectedStable() {

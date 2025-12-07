@@ -199,7 +199,7 @@ public class ClientFrame extends JFrame {
             int value = Integer.parseInt(valueField.getText().trim());
             String desc = descField.getText();
 
-            service.addRatingToHorse(horse, value, desc);
+            service.addRatingToHorse(horse.getId(), value, desc);
 
             refreshHorsesWithFilters();
 
@@ -232,16 +232,12 @@ public class ClientFrame extends JFrame {
                 ? (HorseCondition) selectedState
                 : null;
 
-        try {
-            List<Horse> horses = service.filterHorses(stable, text, condition);
+        List<Horse> horses = service.filterHorses(stable, text, condition);
 
-            var ratingStats = service.getHorseRatingStatsForStable(stable);
+        var ratingStats = service.getHorseRatingStatsForStable(stable);
 
-            horseTableModel.setHorsesWithStats(horses, ratingStats);
+        horseTableModel.setHorsesWithStats(horses, ratingStats);
 
-        } catch (StableOperationException ex) {
-            showError(ex.getMessage());
-        }
     }
 
 

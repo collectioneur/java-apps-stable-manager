@@ -140,7 +140,12 @@ public class StableController {
     public ResponseEntity<?> getStableFill(@PathVariable Long id) {
         return service.getStable(id)
                 .map(s -> {
-                    long count = service.getHorses(id).size(); // Или через countByStable репозитория
+                    long count = 0; // Или через countByStable репозитория
+                    try {
+                        count = service.getHorses(id).size();
+                    } catch (StableOperationException e) {
+                        throw new RuntimeException(e);
+                    }
                     return ResponseEntity.ok(Map.of(
                             "stableName", s.getStableName(),
                             "current", count,
