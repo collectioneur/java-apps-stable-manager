@@ -131,7 +131,6 @@ public class StableController {
                     try {
                         count = service.getHorses(id).size();
                     } catch (StableOperationException e) {
-                        // ignore
                     }
                     return ResponseEntity.ok(Map.of(
                             "stableName", s.getStableName(),
