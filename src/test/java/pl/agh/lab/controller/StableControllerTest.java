@@ -1,77 +1,146 @@
 package pl.agh.lab.controller;
 
-public class StableControllerTest {
-    package pl.agh.lab.controller;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+import pl.agh.lab.model.Stable;
+import pl.agh.lab.repo.StableRepository;
 
-// Импорты для построения запросов и проверок
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.*;
 
-    // Говорим Spring Boot поднять полный контекст приложения для теста
-    @SpringBootTest
-// Автоматически настраиваем MockMvc (инструмент для имитации HTTP-запросов)
-    @AutoConfigureMockMvc
-    class StableControllerTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class StableControllerTest {
 
-        @Autowired
-        private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-        @Test
-        void testGetAllStables() throws Exception {
-            // Выполняем GET запрос на /api/stable
-            mockMvc.perform(get("/api/stable"))
-                    // Ожидаем, что статус ответа будет 200 (OK)
-                    .andExpect(status().isOk())
-                    // Ожидаем, что ответ будет в формате JSON
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    // Ожидаем, что вернется массив (даже пустой)
-                    .andExpect(jsonPath("$", is(any(Iterable.class))));
-        }
+    @Autowired
+    private StableRepository stableRepository;
 
-        @Test
-        void testAddStable() throws Exception {
-            // Подготавливаем JSON для новой конюшни
-            String newStableJson = """
+
+    @Test
+    void testGetAllStables() throws Exception {
+        stableRepository.save(new Stable("Existing Stable", 20));
+
+        mockMvc.perform(get("/api/stable"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$[0].stableName", not(emptyOrNullString())));
+    }
+
+    @Test
+    void testGetHorsesInStable_Success() throws Exception {
+        Stable saved = stableRepository.save(new Stable("Target Stable", 15));
+
+        mockMvc.perform(get("/api/stable/" + saved.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", is(any(Iterable.class))));
+    }
+
+    @Test
+    void testGetHorsesInStable_NotFound() throws Exception {
+        mockMvc.perform(get("/api/stable/9999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testAddStable_Success() throws Exception {
+        String json = """
             {
-                "name": "Test Stable",
-                "capacity": 10
+                "name": "New Test Stable",
+                "capacity": 50
             }
         """;
 
-            // Выполняем POST запрос на /api/stable
-            mockMvc.perform(post("/api/stable")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(newStableJson))
-                    // Ожидаем статус 201 (Created)
-                    .andExpect(status().isCreated())
-                    // Проверяем, что в ответе вернулось имя созданной конюшни
-                    .andExpect(jsonPath("$.stableName", is("Test Stable")))
-                    .andExpect(jsonPath("$.maxCapacity", is(10)));
-        }
+        mockMvc.perform(post("/api/stable")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.stableName", is("New Test Stable")));
+    }
 
-        @Test
-        void testAddInvalidStable() throws Exception {
-            // Пытаемся добавить конюшню с некорректными данными (емкость -5)
-            String badStableJson = """
+    @Test
+    void testAddStable_Invalid() throws Exception {
+        String json = """
             {
                 "name": "Bad Stable",
-                "capacity": -5
+                "capacity": -10
             }
         """;
 
-            mockMvc.perform(post("/api/stable")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(badStableJson))
-                    // Ожидаем статус 400 (Bad Request), так как у нас есть валидация
-                    .andExpect(status().isBadRequest());
-        }
+        mockMvc.perform(post("/api/stable")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testDeleteStable_Success() throws Exception {
+        Stable saved = stableRepository.save(new Stable("To Delete", 5));
+
+        mockMvc.perform(delete("/api/stable/" + saved.getId()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/stable/" + saved.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testAddHorse_Success() throws Exception {
+        Stable stable = stableRepository.save(new Stable("Horse Stable", 10));
+
+        String horseJson = String.format("""
+            {
+                "stableId": %d,
+                "name": "Spirit",
+                "breed": "Mustang",
+                "type": "GORACOKRWISTY",
+                "status": "ZDROWY",
+                "age": 4,
+                "price": 5000.0,
+                "weightKg": 450.0,
+                "heightCm": 160.0,
+                "microchipId": "CHIP-123"
+            }
+        """, stable.getId());
+
+        mockMvc.perform(post("/api/horse")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(horseJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name", is("Spirit")));
+    }
+
+    @Test
+    void testAddHorse_StableNotFound() throws Exception {
+        String horseJson = """
+            {
+                "stableId": 9999,
+                "name": "Ghost",
+                "breed": "Unknown",
+                "type": "ZIMNOKRWISTY",
+                "status": "ZDROWY",
+                "age": 5,
+                "price": 1000.0,
+                "weightKg": 600.0,
+                "heightCm": 170.0,
+                "microchipId": "CHIP-000"
+            }
+        """;
+
+        mockMvc.perform(post("/api/horse")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(horseJson))
+                .andExpect(status().isNotFound());
     }
 }

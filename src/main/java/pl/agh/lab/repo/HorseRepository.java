@@ -15,11 +15,9 @@ public interface HorseRepository extends JpaRepository<Horse, Long> {
 
     long countByStable(Stable stable);
 
-    // Проверка дубликата
     @Query("SELECT COUNT(h) > 0 FROM Horse h WHERE h.stable = :stable AND LOWER(h.name) = LOWER(:name) AND LOWER(h.breed) = LOWER(:breed) AND h.age = :age")
     boolean existsDuplicate(@Param("stable") Stable stable, @Param("name") String name, @Param("breed") String breed, @Param("age") int age);
 
-    // Фильтрация (упрощенная версия через JPQL)
     @Query("SELECT h FROM Horse h WHERE h.stable = :stable " +
             "AND (:fragment IS NULL OR LOWER(h.name) LIKE %:fragment% OR LOWER(h.breed) LIKE %:fragment%) " +
             "AND (:status IS NULL OR h.status = :status) " +

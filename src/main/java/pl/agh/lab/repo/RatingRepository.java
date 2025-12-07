@@ -15,7 +15,6 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
             "FROM Rating r WHERE r.horse.stable.id = :stableId GROUP BY r.horse.name")
     List<HorseRatingStat> findStatsForStable(@Param("stableId") Long stableId);
 
-    // Для задания 1.3: Средняя оценка конкретной лошади
     @Query("SELECT AVG(r.value) FROM Rating r WHERE r.horse.id = :horseId")
     Double getAverageRatingForHorse(@Param("horseId") Long horseId);
 }

@@ -21,7 +21,6 @@ public class StableService {
         this.ratingRepo = ratingRepo;
     }
 
-    // --- МЕТОДЫ ЧТЕНИЯ ---
 
     public List<Stable> getAllStables() {
         return stableRepo.findAll();
@@ -35,14 +34,12 @@ public class StableService {
         return horseRepo.findById(id);
     }
 
-    // Метод для REST API
     public List<Horse> getHorses(Long stableId) throws StableOperationException {
         Stable stable = stableRepo.findById(stableId)
                 .orElseThrow(() -> new StableOperationException("Stable not found"));
         return horseRepo.findByStable(stable);
     }
 
-    // Метод для Swing (перегрузка)
     public List<Horse> getHorses(Stable stable) {
         if (stable == null || stable.getId() == null) return new ArrayList<>();
         return horseRepo.findByStable(stable);
@@ -72,8 +69,6 @@ public class StableService {
         return all;
     }
 
-    // --- МЕТОДЫ ИЗМЕНЕНИЯ (STABLES) ---
-
     public Stable addStable(String name, int capacity) throws ValidationException {
         name = name == null ? "" : name.trim();
         if (name.isEmpty()) throw new ValidationException("Stable name is required");
@@ -83,7 +78,6 @@ public class StableService {
         return stableRepo.save(new Stable(name, capacity));
     }
 
-    // Метод для REST API
     public void removeStable(Long id) throws StableOperationException {
         if (!stableRepo.existsById(id)) {
             throw new StableOperationException("Stable not found");
@@ -91,21 +85,16 @@ public class StableService {
         stableRepo.deleteById(id);
     }
 
-    // Метод для Swing (перегрузка)
     public void removeStable(Stable stable) throws StableOperationException {
         if (stable == null || stable.getId() == null) throw new StableOperationException("Invalid stable");
         removeStable(stable.getId());
     }
 
-    // --- МЕТОДЫ ИЗМЕНЕНИЯ (HORSES) ---
-
-    // Метод для Swing (полный набор параметров)
     public Horse addHorse(Stable stable, String name, String breed, HorseType type, HorseCondition status, int age, double price, double weightKg, double heightCm, String microchipId, Date acquisitionDate)
             throws ValidationException, StableOperationException, HorseOperationException {
 
         if (stable == null || stable.getId() == null) throw new StableOperationException("Stable not managed");
 
-        // Простая валидация
         if (name == null || name.isBlank()) throw new ValidationException("Name is required");
 
         if (horseRepo.existsDuplicate(stable, name, breed, age)) {
@@ -116,11 +105,10 @@ public class StableService {
         }
 
         Horse horse = new Horse(name, breed, type, status, age, price, weightKg, heightCm, microchipId, acquisitionDate);
-        stable.addHorse(horse); // Связываем объекты
+        stable.addHorse(horse);
         return horseRepo.save(horse);
     }
 
-    // Метод для REST API (через DTO/объект)
     public Horse addHorse(Long stableId, Horse horseData) throws ValidationException, StableOperationException, HorseOperationException {
         Stable stable = stableRepo.findById(stableId)
                 .orElseThrow(() -> new StableOperationException("Stable not found"));
@@ -131,21 +119,16 @@ public class StableService {
                 horseData.getAcquisitionDate());
     }
 
-    // Метод для REST API
     public void removeHorse(Long horseId) throws HorseOperationException {
         if (!horseRepo.existsById(horseId)) throw new HorseOperationException("Horse not found");
         horseRepo.deleteById(horseId);
     }
 
-    // Метод для Swing
     public void removeHorse(Stable stable, Horse horse) throws StableOperationException, HorseOperationException {
         if (horse == null || horse.getId() == null) throw new HorseOperationException("Horse not found");
         removeHorse(horse.getId());
     }
 
-    // --- МЕТОДЫ ИЗМЕНЕНИЯ (RATINGS) ---
-
-    // Метод для Swing
     public Rating addRatingToHorse(Horse horse, int value, String description) throws ValidationException, HorseOperationException {
         if (horse == null || horse.getId() == null) throw new HorseOperationException("Horse not found");
 
@@ -155,7 +138,6 @@ public class StableService {
         return ratingRepo.save(rating);
     }
 
-    // Метод для REST API
     public Rating addRatingToHorse(Long horseId, int value, String description) throws ValidationException, HorseOperationException {
         Horse horse = horseRepo.findById(horseId)
                 .orElseThrow(() -> new HorseOperationException("Horse not found"));
